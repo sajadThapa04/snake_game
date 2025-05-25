@@ -28,24 +28,24 @@ const SnakeGame = () => {
   const intervalRef = useRef(null);
 
   const moveSnake = () => {
-    setDirection(nextDirection); // Apply queued direction
+    setDirection(nextDirection);
 
     setSnake((prevSnake) => {
       const head = prevSnake[0];
       const move = DIRECTIONS[nextDirection];
       let newHead = { x: head.x + move.x, y: head.y + move.y };
 
-      // Wrap around the board edges
+      // Wrap around
       if (newHead.x < 0) newHead.x = BOARD_SIZE - 1;
       else if (newHead.x >= BOARD_SIZE) newHead.x = 0;
       if (newHead.y < 0) newHead.y = BOARD_SIZE - 1;
       else if (newHead.y >= BOARD_SIZE) newHead.y = 0;
 
-      // Check collision with self
+      // Self-collision
       if (prevSnake.some((seg) => seg.x === newHead.x && seg.y === newHead.y)) {
         setIsGameOver(true);
         setGameOverReason("You ran into yourself!");
-        return prevSnake; // don't update snake anymore
+        return prevSnake;
       }
 
       const hasEaten = newHead.x === food.x && newHead.y === food.y;
@@ -54,7 +54,6 @@ const SnakeGame = () => {
       if (!hasEaten) {
         newSnake.pop();
       } else {
-        // Generate new food not on snake
         let newFood;
         do {
           newFood = getRandomPosition();
@@ -88,7 +87,6 @@ const SnakeGame = () => {
             ArrowLeft: "ArrowRight",
             ArrowRight: "ArrowLeft",
           };
-          // Prevent 180-degree turn
           return e.key === opposite[direction] ? prev : e.key;
         });
       }
@@ -96,6 +94,19 @@ const SnakeGame = () => {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [direction]);
+
+  const handleTouchControl = (dir) => {
+    const key = `Arrow${dir}`;
+    const opposite = {
+      ArrowUp: "ArrowDown",
+      ArrowDown: "ArrowUp",
+      ArrowLeft: "ArrowRight",
+      ArrowRight: "ArrowLeft",
+    };
+    if (DIRECTIONS[key] && key !== opposite[direction]) {
+      setNextDirection(key);
+    }
+  };
 
   const restart = () => {
     setSnake([
@@ -125,23 +136,22 @@ const SnakeGame = () => {
     return (
       <div
         key={`${x}-${y}`}
-        className={`w-6 h-6 border border-transparent ${bgClass} rounded-sm transition-colors duration-200`}
+        className={`aspect-square border border-transparent ${bgClass} rounded-sm transition-colors duration-200`}
       />
     );
   };
 
   return (
-    <div className="flex flex-col items-center mt-8 select-none">
-      <h1 className="text-3xl font-bold mb-2">🐍 Snake Game</h1>
-      <p className="mb-4 text-lg font-semibold">Score: {score}</p>
+    <div className="flex flex-col items-center mt-4 px-2 select-none">
+      <h1 className="text-2xl font-bold mb-2">🐍 Snake Game</h1>
+      <p className="mb-4 text-md font-semibold">Score: {score}</p>
 
       <div
         className="grid bg-gray-900 rounded-lg shadow-lg"
         style={{
-          gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
-          width: BOARD_SIZE * 24, // cell width * BOARD_SIZE
-          height: BOARD_SIZE * 24,
-          userSelect: "none",
+          gridTemplateColumns: `repeat(${BOARD_SIZE}, minmax(0, 1fr))`,
+          width: "100%",
+          maxWidth: "480px",
         }}>
         {[...Array(BOARD_SIZE)].flatMap((_, y) =>
           [...Array(BOARD_SIZE)].map((_, x) => renderCell(x, y))
@@ -149,17 +159,45 @@ const SnakeGame = () => {
       </div>
 
       {isGameOver && (
-        <div className="mt-6 text-center">
-          <p className="text-red-500 text-xl font-bold">
+        <div className="mt-4 text-center">
+          <p className="text-red-500 font-bold">
             {gameOverReason || "Game Over!"}
           </p>
           <button
             onClick={restart}
-            className="mt-3 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+            className="mt-2 px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Restart
           </button>
         </div>
       )}
+
+      {/* Mobile Controls */}
+      <div className="mt-6 grid grid-cols-3 gap-2 w-40 sm:w-48 text-white">
+        <div></div>
+        <button
+          onClick={() => handleTouchControl("Up")}
+          className="bg-gray-700 p-3 rounded hover:bg-gray-600">
+          ⬆️
+        </button>
+        <div></div>
+        <button
+          onClick={() => handleTouchControl("Left")}
+          className="bg-gray-700 p-3 rounded hover:bg-gray-600">
+          ⬅️
+        </button>
+        <div></div>
+        <button
+          onClick={() => handleTouchControl("Right")}
+          className="bg-gray-700 p-3 rounded hover:bg-gray-600">
+          ➡️
+        </button>
+        <div></div>
+        <button
+          onClick={() => handleTouchControl("Down")}
+          className="bg-gray-700 p-3 rounded hover:bg-gray-600 col-span-3">
+          ⬇️
+        </button>
+      </div>
     </div>
   );
 };
